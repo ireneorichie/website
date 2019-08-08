@@ -8,4 +8,4 @@
 DEFAULTBRANCH="release-0.7"
 
 # An optional value that you can locally override for local builds/testing
-DEFAULTFORK="knative"
+DEFAULTFORK="richieescarez"
