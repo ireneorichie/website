@@ -17,5 +17,5 @@
 # Site redirects
 [[redirects]]
   from = "/docs/build/*"
-  to = "/docs/build/"
-
+  to = "/docs/build"
+  status = 301
