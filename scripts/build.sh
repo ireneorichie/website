@@ -79,7 +79,7 @@ then
   echo 'Webhook Body:' "$INCOMING_HOOK_BODY"
 
   # Retrieve the repo/fork URL
-  CLONEURL=$(echo "$INCOMING_HOOK_BODY" | grep -o -m 1 '\"clone_url\"\:\".*\.git\"\,\"svn_url\"' | sed -e 's/.*\"clone_url\"\:\"//;s/\.git\".*/\.git/' || true)
+  CLONEURL=$(echo "$INCOMING_HOOK_BODY" | grep -o  '\"clone_url\"\:\".*\.git\"\,\"svn_url\"' | sed -e 's/.*\"clone_url\"\:\"//;s/\.git\".*/\.git/;s/https\:\/\/github\.com\/knative\/docs.git//' || true)
   echo $CLONEURL
   FORK=$(echo "$CLONEURL" | sed -e 's/https\:\/\/github.com\///;s/\/docs.git//')
   echo $FORK
