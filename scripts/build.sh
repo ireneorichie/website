@@ -84,24 +84,18 @@ then
   then
     # Get PR number
     PULL_REQUEST=$(echo "$INCOMING_HOOK_BODY" | grep -o -m 1 '\"number\"\:.*\,\"pull_request\"' | sed -e 's/\"number\"\://;s/\,\"pull_request\"//' || true)
-    # Retrieve the repo/fork URL
-    #CLONEURL=$(echo "$INCOMING_HOOK_BODY" | grep -o  '\"clone_url\"\:\".*\.git\"\,\"svn_url\"' | sed -e 's/.*\"clone_url\"\:\"//;s/\.git\".*/\.git/;s/https\:\/\/github\.com\/knative\/docs.git//' || true)
-    #FORK=$(echo "$CLONEURL" | sed -e 's/https\:\/\/github.com\///;s/\/docs.git//')
+    # Retrieve the fork and branch from PR webhook
     FORK_BRANCH=$(echo "$INCOMING_HOOK_BODY" | grep -o -m 1 '\"label\"\:\".*\"\,\"ref\"' | sed -e 's/\"label\"\:\"knative\:.*//;s/\"label\"\:\"//;s/\"\,\"ref\".*//' || true)
-    #TEST
-    echo 'FORK_BRANCH:' "$FORK_BRANCH"
+    # Extract just the fork name
     FORK=$(echo "$FORK_BRANCH" | sed -e 's/\:.*//')
-    #TEST
-    echo 'fork is:' "$FORK"
-    # If PR was merged, then run default build and deploy production site (www.knative.dev)
+    # If PR was merged, just run default build and deploy production site (www.knative.dev)
     MERGEDPR=$(echo "$INCOMING_HOOK_BODY" | grep -o '\"merged\"\:true\,' || : )
     if [ "$MERGEDPR" ]
     then
       echo '------ PR' "$PULL_REQUEST" 'MERGED ------'
       echo 'Running production build - publishing new changes'
     else
-      # If PR has not been merged, get branch info for preview build
-      #BRANCH=$(echo "$INCOMING_HOOK_BODY" | grep -o -m 1 '\"ref\"\:\".*\"\,\"sha\"' | sed -e 's/\"\,\"sha\".*//;s/.*\"ref\"\:\"//' || true)
+      # If PR was not merged, extract the branch name (to use for preview build)
       BRANCH=$(echo "$FORK_BRANCH" | sed -e 's/.*\://')
     fi
   else
