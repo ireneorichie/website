@@ -29,6 +29,7 @@ source scripts/docs-version-settings.sh
 BUILDALLRELEASES="true"
 BRANCH="$DEFAULTBRANCH"
 FORK="$DEFAULTFORK"
+LOCALBUILD="false"
 
 # Manually specify your fork and branch for all builds.
 #
