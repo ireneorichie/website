@@ -79,19 +79,20 @@ then
   echo 'Webhook URL:' "$INCOMING_HOOK_URL"
   echo 'Webhook Body:' "$INCOMING_HOOK_BODY"
 
-  # Retrieve the repo/fork URL
-  #CLONEURL=$(echo "$INCOMING_HOOK_BODY" | grep -o  '\"clone_url\"\:\".*\.git\"\,\"svn_url\"' | sed -e 's/.*\"clone_url\"\:\"//;s/\.git\".*/\.git/;s/https\:\/\/github\.com\/knative\/docs.git//' || true)
-  CLONEURL=$(echo "$INCOMING_HOOK_BODY" | grep -o -m 1 '\"label\"\:\".*\"\,\"ref\"' | sed -e 's/\"label\"\:\"knative\:.*//;s/\"label\"\:\"//;s/\"\,\"ref\".*//' || true)
-  echo 'CLONEURL:' "$CLONEURL"
-  #FORK=$(echo "$CLONEURL" | sed -e 's/https\:\/\/github.com\///;s/\/docs.git//')
-  FORK=$(echo "$CLONEURL" | sed -e 's/\:.*//')
-  echo 'fork is:' "$FORK"
-
   # If webhook is from a "PULL REQUEST" event
   if echo "$INCOMING_HOOK_BODY" | grep -q -m 1 '\"pull_request\"'
   then
     # Get PR number
     PULL_REQUEST=$(echo "$INCOMING_HOOK_BODY" | grep -o -m 1 '\"number\"\:.*\,\"pull_request\"' | sed -e 's/\"number\"\://;s/\,\"pull_request\"//' || true)
+    # Retrieve the repo/fork URL
+    #CLONEURL=$(echo "$INCOMING_HOOK_BODY" | grep -o  '\"clone_url\"\:\".*\.git\"\,\"svn_url\"' | sed -e 's/.*\"clone_url\"\:\"//;s/\.git\".*/\.git/;s/https\:\/\/github\.com\/knative\/docs.git//' || true)
+    #FORK=$(echo "$CLONEURL" | sed -e 's/https\:\/\/github.com\///;s/\/docs.git//')
+    FORK_BRANCH=$(echo "$INCOMING_HOOK_BODY" | grep -o -m 1 '\"label\"\:\".*\"\,\"ref\"' | sed -e 's/\"label\"\:\"knative\:.*//;s/\"label\"\:\"//;s/\"\,\"ref\".*//' || true)
+    #TEST
+    echo 'FORK_BRANCH:' "$FORK_BRANCH"
+    FORK=$(echo "$FORK_BRANCH" | sed -e 's/\:.*//')
+    #TEST
+    echo 'fork is:' "$FORK"
     # If PR was merged, then run default build and deploy production site (www.knative.dev)
     MERGEDPR=$(echo "$INCOMING_HOOK_BODY" | grep -o '\"merged\"\:true\,' || : )
     if [ "$MERGEDPR" ]
@@ -100,7 +101,8 @@ then
       echo 'Running production build - publishing new changes'
     else
       # If PR has not been merged, get branch info for preview build
-      BRANCH=$(echo "$INCOMING_HOOK_BODY" | grep -o -m 1 '\"ref\"\:\".*\"\,\"sha\"' | sed -e 's/\"\,\"sha\".*//;s/.*\"ref\"\:\"//' || true)
+      #BRANCH=$(echo "$INCOMING_HOOK_BODY" | grep -o -m 1 '\"ref\"\:\".*\"\,\"sha\"' | sed -e 's/\"\,\"sha\".*//;s/.*\"ref\"\:\"//' || true)
+      BRANCH=$(echo "$FORK_BRANCH" | sed -e 's/.*\://')
     fi
   else
     # Webhook from "PUSH event"
@@ -116,9 +118,9 @@ fi
 
 echo '------ BUILD DETAILS ------'
 echo 'Build type:' "$CONTEXT"
-if [ $CLONEURL ]
+if [ "$FORK" != "knative" ]
 then
-echo 'Building content from:' "$CLONEURL"
+echo 'Building content from:' "$FORK"
 echo 'Using Branch:' "$BRANCH"
 fi
 echo 'Commit HEAD:' "$HEAD"
