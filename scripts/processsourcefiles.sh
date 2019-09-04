@@ -16,27 +16,37 @@ fi
 # Clean slate: Make sure that nothing from a past build exists in the /content/ or /temp/ folders
 rm -rf content/en
 rm -rf temp
-echo 'Cloning Knative documentation from their source repositories.'
 
-if "$BUILDALLRELEASES"
+# PULL REQUEST BUILD
+# Build only the content in the PR using the "Staging" environment settings (config/staging)
+if "$PRBUILD"
 then
-  echo '------ BUILDING ALL DOC RELEASES FROM' "$FORK" '------'
+  # Build only the branch from the PR
+  git clone --quiet -b "$BRANCH" https://github.com/"$FORK"/docs.git content/en
+# PRODUCTION BUILD (ALL RELEASES)
+# Full build for knative.dev (config/production). Contributors can also use this for personal builds.
+elif "$BUILDALLRELEASES"
+then
+  echo '------ BUILDING ALL DOC RELEASES ------'
   # Build Knative docs from:
   # - https://github.com/"$FORK"/docs
   # - https://github.com/knative/community
-  echo '------ Cloning Pre-release docs (master) ------'
+
+  # Build all branches (assumes $FORK contains all docs versions)
+  echo '------ Cloning Community and Pre-release docs (master) ------'
   # MASTER
   echo 'Getting blog posts and community owned samples from knative/docs master branch'
-  git clone -b master https://github.com/"$FORK"/docs.git content/en
+  git clone --quiet -b master https://github.com/"$FORK"/docs.git content/en
   echo 'Getting pre-release development docs from master branch'
   # Move "pre-release" docs content into the 'development' folder:
   mv content/en/docs content/en/development
   # DOCS BRANCHES
   echo '------ Cloning all docs releases ------'
   # Get versions of released docs from their branches in "$FORK"/docs
-  echo 'Getting the latest release from the' "$BRANCH" 'branch of' "$FORK"
+  echo 'The /docs/ section is built from the' "$BRANCH" 'branch of' "$FORK"
   # Latest version is defined in website/scripts/docs-version-settings.sh
-  git clone -b "$BRANCH" https://github.com/"$FORK"/docs.git temp/release/latest
+  # If this is a PR build, then build that content as the latest release (assume PR preview builds are always from "latest")
+  git clone --quiet -b "$BRANCH" https://github.com/"$FORK"/docs.git temp/release/latest
 
   ###############################################################
   # Template for next release:
@@ -46,18 +56,20 @@ then
 
   # Only copy and keep the "docs" folder from all branched releases:
   mv temp/release/latest/docs content/en/docs
-  echo 'Getting the archived docs releases'
-  git clone -b "release-0.7" https://github.com/"$FORK"/docs.git temp/release/v0.7
+  echo 'Getting the archived docs releases from branches in:' "$FORK"'/docs'
+  git clone --quiet -b "release-0.7" https://github.com/"$FORK"/docs.git temp/release/v0.7
   mv temp/release/v0.7/docs content/en/v0.7-docs
-  git clone -b "release-0.6" https://github.com/"$FORK"/docs.git temp/release/v0.6
+  git clone --quiet -b "release-0.6" https://github.com/"$FORK"/docs.git temp/release/v0.6
   mv temp/release/v0.6/docs content/en/v0.6-docs
-  git clone -b "release-0.5" https://github.com/"$FORK"/docs.git temp/release/v0.5
+  git clone --quiet -b "release-0.5" https://github.com/"$FORK"/docs.git temp/release/v0.5
   mv temp/release/v0.5/docs content/en/v0.5-docs
-  git clone -b "release-0.4" https://github.com/"$FORK"/docs.git temp/release/v0.4
+  git clone --quiet -b "release-0.4" https://github.com/"$FORK"/docs.git temp/release/v0.4
   mv temp/release/v0.4/docs content/en/v0.4-docs
-  git clone -b "release-0.3" https://github.com/"$FORK"/docs.git temp/release/v0.3
+  git clone --quiet -b "release-0.3" https://github.com/"$FORK"/docs.git temp/release/v0.3
   mv temp/release/v0.3/docs content/en/v0.3-docs
   echo 'Moving cloned files into their v#.#-docs website folders'
+# LOCAL BUILD
+# Assumes that knative/docs and knative/website are cloned to the same directory.
 else
   echo '------ BUILDING ONLY FROM YOUR LOCAL KNATIVE/DOCS CLONE ------'
   pwd
@@ -67,15 +79,15 @@ fi
 echo '------ Cloning contributor docs ------'
 # COMMUNITY
 echo 'Getting Knative contributor guidelines from the master branch of knative/community'
-git clone -b master https://github.com/knative/community.git temp/community
+git clone --quiet -b master https://github.com/knative/community.git temp/community
 # Move files into existing "contributing" folder
 mv temp/community/* content/en/contributing
 
 # CLEANUP
-  # Delete temporary directory
-  # (clear out unused files, including archived-copies/past-versions of blog posts and contributor samples)
-  echo 'Cleaning up temp directory'
-  rm -rf temp
+# Delete temporary directory
+# (clear out unused files, including archived-copies/past-versions of blog posts and contributor samples)
+echo 'Cleaning up temp directory'
+rm -rf temp
 
 # MAKE RELATIVE LINKS WORK
 # We want users to be able view and use the source files in GitHub as well as on the site.
@@ -106,7 +118,7 @@ find . -type f -path '*/content/*.md' ! -name '*_index.md' ! -name '*README.md' 
 find . -type f -path '*/content/*/*/README.md' ! -name '_index.md' \
     -exec sed -i '/](/ { /http/ !s#README\.md#index.html#g; /http/ !s#\.md##g }' {} +
 
-# Releases v0.6 and earlier doc releases:
+# v0.6 and earlier doc releases:
 #use the "readfile" shortcodes to hide all the README.md files
 # (by nesting them within the _index.md files)
 echo 'Converting all README.md to index.md for "pre-release" and 0.7 or later doc releases'
